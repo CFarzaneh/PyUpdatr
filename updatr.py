@@ -38,14 +38,19 @@ if __name__ == "__main__":
 		fp = open(appsPath+'/'+app+'/Contents/Info.plist', 'rb')
 		pl = plistlib.load(fp)
 
-		if 'com.apple' in pl['CFBundleIdentifier'] or 'TorGuard' in app:
+		try:
+			appId = pl['CFBundleIdentifier']
+			appName = pl['CFBundleName']
+			installedVersion = pl['CFBundleShortVersionString']
+		except KeyError as e:
 			fp.close()
 			continue
+		else:
+			if 'com.apple' in appId:
+				fp.close()
+				continue
 
-		appName = pl['CFBundleName']
 		appName.replace(' ', '%20')
-		installedVersion = pl['CFBundleShortVersionString']
-
 		raw_html = simple_get('https://www.macupdate.com/find/mac/'+appName)
 
 		html = BeautifulSoup(raw_html, 'html.parser')
