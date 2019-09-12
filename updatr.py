@@ -42,7 +42,7 @@ if __name__ == "__main__":
 			appId = pl['CFBundleIdentifier']
 			appName = pl['CFBundleName']
 			installedVersion = pl['CFBundleShortVersionString']
-		except KeyError as e:
+		except KeyError:
 			fp.close()
 			continue
 		else:
@@ -51,10 +51,14 @@ if __name__ == "__main__":
 				continue
 
 		appName.replace(' ', '%20')
-		raw_html = simple_get('https://www.macupdate.com/find/mac/'+appName)
 
-		html = BeautifulSoup(raw_html, 'html.parser')
-		currentVersion = html.find('span',itemprop="version").text
+		try:
+			raw_html = simple_get('https://www.macupdate.com/find/mac/'+appName)
+			html = BeautifulSoup(raw_html, 'html.parser')
+			currentVersion = html.find('span',itemprop="version").text
+		except AttributeError:
+			fp.close()
+			continue
 
 		if installedVersion != currentVersion:
 			outdated.append((appName, currentVersion, installedVersion))
