@@ -57,29 +57,24 @@ if __name__ == "__main__":
 
 		appName.replace(' ', '%20')
 
-		try:
-			raw_html = simple_get('https://www.macupdate.com/find/mac/context%3D'+appName)
-			html = BeautifulSoup(raw_html, 'html.parser')
-			urls = html.find_all('a', attrs={"class":"ns_sp_app-results"}, href=True)
-			found = False
-			maxCheck = min(5,len(urls))
-			for i in range(maxCheck):
-				htmlAgain = simple_get('https://www.macupdate.com'+urls[i]['href']).decode("utf-8")
-				matches = re.findall(r'"bundle_identifiers":\[(.+?)\]',htmlAgain)[0]
-				if len(matches) == 0:
-					raise AttributeError
-				matches = matches.replace('"','').split(',')
-				if appId in matches:
-					found = True
-					currentVersion = html.find('div', attrs={"class":"mu_card_line_info_version"}).contents[0]
-					break
-			if found == False:
-				raise AttributeError
-		except AttributeError:
-			fp.close()
-			continue
-
-		if installedVersion != currentVersion:
+		raw_html = simple_get('https://www.macupdate.com/find/mac/context%3D'+appName)
+		html = BeautifulSoup(raw_html, 'html.parser')
+		urls = html.find_all('a', attrs={"class":"ns_sp_app-results"}, href=True)
+		found = False
+		maxCheck = min(10,len(urls))
+		for i in range(maxCheck):
+			htmlAgain = simple_get('https://www.macupdate.com'+urls[i]['href']).decode("utf-8")
+			matches = re.findall(r'"bundle_identifiers":\[(.+?)\]',htmlAgain)[0]
+			if len(matches) == 0:
+				continue
+			matches = matches.replace('"','').split(',')
+			if appId in matches:
+				found = True
+				html = BeautifulSoup(htmlAgain, 'html.parser')
+				currentVersion = html.find('span', attrs={"class":"mu_app_header_version"}).contents[0]
+				break
+		
+		if found and installedVersion != currentVersion:
 			outdated.append((appName, currentVersion, installedVersion))
 
 		fp.close()
