@@ -5,6 +5,8 @@ from requests import get
 from tqdm import tqdm
 import plistlib
 import os
+import json
+import re
 
 def simple_get(url):
     try:
@@ -34,6 +36,9 @@ if __name__ == "__main__":
 	outdated = []
 	print('Scanning applications...')
 	for app in tqdm(apps):
+
+		# if app != "1Password 7.app":
+		# 	continue
 		
 		fp = open(appsPath+'/'+app+'/Contents/Info.plist', 'rb')
 		pl = plistlib.load(fp)
@@ -53,9 +58,23 @@ if __name__ == "__main__":
 		appName.replace(' ', '%20')
 
 		try:
-			raw_html = simple_get('https://www.macupdate.com/find/mac/'+appName)
+			raw_html = simple_get('https://www.macupdate.com/find/mac/context%3D'+appName)
 			html = BeautifulSoup(raw_html, 'html.parser')
-			currentVersion = html.find('span',itemprop="version").text
+			urls = html.find_all('a', attrs={"class":"ns_sp_app-results"}, href=True)
+			found = False
+			maxCheck = min(5,len(urls))
+			for i in range(maxCheck):
+				htmlAgain = simple_get('https://www.macupdate.com'+urls[i]['href']).decode("utf-8")
+				matches = re.findall(r'"bundle_identifiers":\[(.+?)\]',htmlAgain)[0]
+				if len(matches) == 0:
+					raise AttributeError
+				matches = matches.replace('"','').split(',')
+				if appId in matches:
+					found = True
+					currentVersion = html.find('div', attrs={"class":"mu_card_line_info_version"}).contents[0]
+					break
+			if found == False:
+				raise AttributeError
 		except AttributeError:
 			fp.close()
 			continue
