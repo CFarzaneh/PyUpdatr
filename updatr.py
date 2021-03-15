@@ -79,7 +79,13 @@ if __name__ == "__main__":
                 found = True
                 html = BeautifulSoup(htmlAgain, 'html.parser')
                 currentVersion = html.find(
-                    'span', attrs={"class": "mu_app_header_version"}).contents[0]
+                    'span', attrs={"class": "mu_app_header_version"})
+                if not currentVersion:
+                    currentVersion = html.find(
+                        'a', attrs={"class": "mu_app_header_version"})
+                    currentVersion = currentVersion.contents[0].contents[0]
+                else:
+                    currentVersion = currentVersion.contents[0]
                 break
 
         if found and installedVersion != currentVersion:
