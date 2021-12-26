@@ -37,21 +37,19 @@ if __name__ == "__main__":
     apps = [x for x in apps if not x.startswith('.') and x.endswith('.app')]
 
     outdated = []
+    skipped = []
     print('Scanning applications...')
     for app in tqdm(apps):
 
-        # if app != "1Password 7.app":
-        # 	continue
-
-        fp = open(appsPath+'/'+app+'/Contents/Info.plist', 'rb')
-        pl = plistlib.load(fp)
-
         try:
+            fp = open(appsPath+'/'+app+'/Contents/Info.plist', 'rb')
+            pl = plistlib.load(fp)
             appId = pl['CFBundleIdentifier']
             appName = pl['CFBundleName']
             installedVersion = pl['CFBundleShortVersionString']
-        except KeyError:
+        except Exception as e:
             fp.close()
+            skipped.append(app)
             continue
         else:
             if 'com.apple' in appId:
@@ -83,12 +81,14 @@ if __name__ == "__main__":
                 if not currentVersion:
                     currentVersion = html.find(
                         'a', attrs={"class": "mu_app_header_version"})
-                    currentVersion = currentVersion.contents[0].contents[0]
+                    currentVersion = currentVersion.contents[0].contents[-1]
                 else:
-                    currentVersion = currentVersion.contents[0]
+                    currentVersion = currentVersion.contents[-1]
                 break
 
-        if found and installedVersion != currentVersion:
+        if not found:
+            skipped.append(app)
+        elif installedVersion != currentVersion:
             outdated.append((appName, currentVersion, installedVersion))
 
         fp.close()
@@ -99,3 +99,6 @@ if __name__ == "__main__":
         print('Current version:', currentVersion)
         print('Installed version:', installedVersion)
         print()
+    
+    if skipped:
+        print("Skipped: ", ", ".join(skipped))
